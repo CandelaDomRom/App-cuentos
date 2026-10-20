@@ -97,6 +97,9 @@ button{background:var(--rb);border-bottom-color:#d6c6f0}
 .story:nth-child(1){background:#ffe0e8;border-bottom-color:#ffadc4}
 .story:nth-child(2){background:#e3f8e1;border-bottom-color:#a8e6a1}
 .story:nth-child(3){background:#e9e5ff;border-bottom-color:#b9aef5}
+.story:nth-child(4){background:#fff0d9;border-bottom-color:#ffd6a5}
+.story:nth-child(5){background:#def6fb;border-bottom-color:#9bd9e8}
+.story:nth-child(6){background:#ffe6f6;border-bottom-color:#ffc6ff}
 .book,.result{background:linear-gradient(#fff,#fff) padding-box,var(--rb-full) border-box;border:6px solid transparent;border-radius:24px}
 .result{padding:14px 20px}
 .stars{color:#ffc857}
@@ -115,6 +118,11 @@ button{background:var(--rb);border-bottom-color:#d6c6f0}
 .sent li.bad{background:#ffe6e6;border-bottom-color:#ffadad}
 .sent li.bad::before{background:#ffadad}
 body.focus .arco::before,body.focus .arco::after{display:none}
+
+/* ---- Movimiento suave ---- */
+.sent li{transition:scale .18s ease,box-shadow .22s ease,background-color .25s ease}
+.sent li.drag{scale:1.03}
+.sent li.settle{z-index:4}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -178,9 +186,10 @@ body.focus .arco::before,body.focus .arco::after{display:none}
 </main>
 
 <script>
-/* ---- Cuentos: las frases están en el ORDEN CORRECTO. Se barajan al jugar. ---- */
+/* ---- Cuentos: t = texto que se lee; s = ideas cortas a ordenar (en el ORDEN CORRECTO, se barajan al jugar). ---- */
 const STORIES = [
-  { title:"Caperucita Roja", emoji:"🧺", s:[
+  { title:"Caperucita Roja", emoji:"🧺", s:["Caperucita vive cerca del bosque.", "Mamá le manda llevar comida a la abuelita.", "Caperucita se encuentra con el lobo.", "El lobo corre a casa de la abuelita.", "El lobo encierra a la abuelita y ocupa su cama.", "Caperucita ve a su abuelita muy rara.", "Pregunta por esos ojos y orejas tan grandes.", "El lobo intenta atraparla.", "Un leñador ayuda a Caperucita.", "El lobo huye y todos se salvan."],
+    t:[
     "Caperucita Roja vivía con su mamá cerca del bosque.",
     "Un día, su mamá le pidió que llevara una cesta con comida a su abuelita, que estaba enferma.",
     "En el camino, Caperucita se encontró con el lobo, que le preguntó adónde iba.",
@@ -192,7 +201,8 @@ const STORIES = [
     "Un leñador oyó los gritos, entró en la casa y asustó al lobo.",
     "El lobo salió huyendo, la abuelita salió del armario y todos se abrazaron felices."
   ]},
-  { title:"Los tres cerditos", emoji:"🐷", s:[
+  { title:"Los tres cerditos", emoji:"🐷", s:["Tres cerditos se van a vivir solos.", "El primero construye una casa de paja.", "El segundo la construye de madera.", "El tercero se esfuerza con ladrillos.", "El lobo sopla y tira la casa de paja.", "El primer cerdito huye a la casa de madera.", "El lobo derriba también la casa de madera.", "Los dos cerditos corren a la casa de ladrillos.", "El lobo no puede derribar los ladrillos.", "Los tres cerditos están a salvo."],
+    t:[
     "Tres cerditos salieron de casa para construir cada uno su propia casita.",
     "El primero hizo su casa de paja muy deprisa para irse a jugar.",
     "El segundo la hizo de madera, y el tercero trabajó mucho para construirla de ladrillos.",
@@ -204,7 +214,8 @@ const STORIES = [
     "El lobo sopló y sopló, pero la casa de ladrillos no se movió.",
     "El lobo se rindió y los tres cerditos vivieron seguros y felices."
   ]},
-  { title:"Blancanieves", emoji:"🍎", s:[
+  { title:"Blancanieves", emoji:"🍎", s:["Blancanieves vive con su madrastra, la reina.", "La reina consulta cada día su espejo mágico.", "El espejo dice que Blancanieves es más bella.", "La reina siente mucha envidia.", "Blancanieves huye al bosque.", "Los siete enanitos la acogen en su casita.", "La reina disfrazada le da una manzana envenenada.", "Blancanieves cae dormida.", "Un príncipe le da un beso.", "Blancanieves despierta y se casa con él."],
+    t:[
     "Blancanieves era una princesa muy bella que vivía con su madrastra, la reina malvada.",
     "La reina le preguntaba cada día a su espejo mágico quién era la más hermosa del reino.",
     "Un día el espejo respondió que era Blancanieves, y la reina se llenó de envidia.",
@@ -215,6 +226,45 @@ const STORIES = [
     "Los enanitos la encontraron y, muy tristes, la colocaron en una urna de cristal.",
     "Un príncipe la vio, quedó maravillado y le dio un beso.",
     "Blancanieves despertó y se casó con el príncipe."
+  ]},
+  { title:"Hansel y Gretel", emoji:"🍬", s:["Hansel y Gretel viven con su padre y su madrastra.", "Los niños son llevados al bosque.", "Hansel deja migas de pan por el camino.", "Los pájaros se comen las migas.", "Los hermanos se pierden en el bosque.", "Encuentran una casita de dulces.", "Una bruja encierra a Hansel.", "Gretel empuja a la bruja al horno.", "Los hermanos se llevan las joyas.", "Vuelven a casa con su padre."],
+    t:[
+    "Hansel y Gretel eran dos hermanos que vivían con su padre y su madrastra cerca de un bosque.",
+    "Como casi no tenían comida, la madrastra convenció al padre de llevar a los niños al bosque.",
+    "Hansel fue dejando migas de pan por el camino para poder volver a casa.",
+    "Los pájaros se comieron las migas y los hermanos se quedaron perdidos.",
+    "Caminando sin rumbo, encontraron una casita hecha de pan, dulces y chocolate.",
+    "Dentro vivía una bruja malvada, que encerró a Hansel en una jaula.",
+    "La bruja quería comérselo, pero antes obligó a Gretel a cocinar y a limpiar.",
+    "Cuando la bruja se asomó al horno, Gretel la empujó y cerró la puerta.",
+    "Gretel liberó a Hansel y los dos se llevaron las joyas de la casa de la bruja.",
+    "Los hermanos encontraron el camino de vuelta y vivieron felices con su padre."
+  ]},
+  { title:"La Sirenita", emoji:"🧜‍♀️", s:["La Sirenita vive en el fondo del mar.", "Sueña con el mundo de los humanos.", "Salva a un príncipe en una tormenta.", "Se enamora del príncipe.", "La bruja del mar le da piernas.", "A cambio, la Sirenita pierde su voz.", "La bruja engaña al príncipe.", "Los amigos del mar detienen la boda.", "La Sirenita recupera su voz.", "La Sirenita y el príncipe se casan."],
+    t:[
+    "La Sirenita era una joven sirena que vivía en el fondo del mar con su padre, el rey Tritón.",
+    "Soñaba con conocer el mundo de los humanos, que vivían en la superficie.",
+    "Un día salvó a un príncipe que se ahogaba durante una tormenta y se enamoró de él.",
+    "Para poder caminar por la tierra, fue a ver a la bruja del mar.",
+    "La bruja le dio piernas a cambio de su preciosa voz.",
+    "Sin voz, la Sirenita no podía contarle al príncipe que ella lo había salvado.",
+    "La bruja engañó al príncipe para que se casara con otra mujer.",
+    "Los amigos de la Sirenita descubrieron el engaño y detuvieron la boda.",
+    "La Sirenita recuperó su voz y el príncipe supo que ella lo había salvado.",
+    "Se casaron y vivieron felices entre el mar y la tierra."
+  ]},
+  { title:"Pinocho", emoji:"🤥", s:["Gepetto hace un muñeco de madera.", "El hada azul da vida a Pinocho.", "Pinocho se escapa con unos pillos.", "Cuando miente, su nariz crece.", "En la Isla de los Juguetes le salen orejas de burro.", "Una ballena se traga a Gepetto.", "Pinocho se lanza al mar a rescatarlo.", "Padre e hijo escapan de la ballena.", "Pinocho demuestra ser valiente y sincero.", "El hada lo convierte en niño de verdad."],
+    t:[
+    "Gepetto era un carpintero que hizo un muñeco de madera al que llamó Pinocho.",
+    "Un hada azul dio vida al muñeco y le prometió que sería un niño de verdad si era bueno.",
+    "Pinocho se dejó engañar por unos pillos y, en lugar de ir a la escuela, se fue con ellos.",
+    "Cada vez que Pinocho decía una mentira, su nariz crecía y crecía.",
+    "Más tarde llegó a la Isla de los Juguetes, donde le salieron orejas y cola de burro.",
+    "Pinocho se enteró de que Gepetto había sido tragado por una ballena enorme.",
+    "Pinocho se lanzó al mar para rescatar a su papá.",
+    "Dentro de la ballena encontró a Gepetto, y juntos hicieron una hoguera para que los escupiera.",
+    "Pinocho demostró ser valiente, generoso y sincero.",
+    "El hada azul cumplió su promesa y lo convirtió en un niño de verdad."
   ]}
 ];
 
@@ -242,9 +292,9 @@ function openStory(i){
   story = STORIES[i];
   $("rTitle").textContent = story.title;
   $("rText").innerHTML = "";
-  for(let k = 0; k < story.s.length; k += 3){
+  for(let k = 0; k < story.t.length; k += 3){
     const p = document.createElement("p");
-    p.textContent = story.s.slice(k, k+3).join(" ");
+    p.textContent = story.t.slice(k, k+3).join(" ");
     $("rText").appendChild(p);
   }
   show("read");
@@ -283,7 +333,7 @@ function speak(t){
   const u = new SpeechSynthesisUtterance(t); u.lang = "es-ES"; u.rate = .9;
   speechSynthesis.speak(u);
 }
-$("rSpeak").onclick = () => speechSynthesis.speaking ? speechSynthesis.cancel() : speak(story.s.join(" "));
+$("rSpeak").onclick = () => speechSynthesis.speaking ? speechSynthesis.cancel() : speak(story.t.join(" "));
 
 /* ---- Juego ---- */
 const MAX = 3, CH = 5;           // intentos por parte y frases por parte (modo "de 5 en 5")
@@ -339,6 +389,20 @@ $("list").addEventListener("click", e => {
   if(b) speak(b.closest("li").querySelector(".txt").textContent);
 });
 
+/* Animación suave al recolocar las frases (técnica FLIP): cada frase se desliza desde donde estaba */
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const EASE = "cubic-bezier(.22,1,.36,1)";
+function flip(list, change, skip){
+  const els = [...list.children].filter(e => e !== skip);
+  const before = new Map(els.map(e => [e, e.getBoundingClientRect().top]));
+  change();
+  if(calm) return;
+  els.forEach(e => {
+    const d = before.get(e) - e.getBoundingClientRect().top;
+    if(d) e.animate([{transform:`translateY(${d}px)`},{transform:"none"}], {duration:260, easing:EASE});
+  });
+}
+
 /* Arrastrar con ratón, dedo o lápiz (Pointer Events) */
 $("list").addEventListener("pointerdown", e => {
   const grip = e.target.closest(".grip");
@@ -347,22 +411,40 @@ $("list").addEventListener("pointerdown", e => {
   clearOk();
   const list = $("list"), li = grip.closest("li");
   const grab = e.clientY - li.getBoundingClientRect().top;
+  let y = e.clientY, raf = 0;
   li.classList.add("drag");
   grip.setPointerCapture(e.pointerId);
 
-  const move = ev => {
+  // Se ejecuta en cada fotograma: la frase sigue al dedo y las demás se apartan con suavidad
+  const place = () => {
     li.style.transform = "none";
     const h = li.getBoundingClientRect().height;
-    const top = ev.clientY - grab, centre = top + h/2;
+    const top = y - grab, centre = top + h/2;
     const prev = li.previousElementSibling, next = li.nextElementSibling;
-    if(prev){ const r = prev.getBoundingClientRect(); if(centre < r.top + r.height/2) list.insertBefore(li, prev); }
-    if(next){ const r = next.getBoundingClientRect(); if(centre > r.top + r.height/2) list.insertBefore(next, li); }
+    if(prev && centre < prev.getBoundingClientRect().top + prev.offsetHeight/2)
+      flip(list, () => list.insertBefore(li, prev), li);
+    else if(next && centre > next.getBoundingClientRect().top + next.offsetHeight/2)
+      flip(list, () => list.insertBefore(next, li), li);
     li.style.transform = `translateY(${top - li.getBoundingClientRect().top}px)`;
-    if(ev.clientY < 80) window.scrollBy(0,-14);
-    else if(ev.clientY > innerHeight - 80) window.scrollBy(0,14);
   };
+  const tick = () => {
+    const edge = 90;      // desplazamiento automático, más rápido cuanto más cerca del borde
+    if(y < edge) window.scrollBy(0, -(2 + 16*(edge - y)/edge));
+    else if(y > innerHeight - edge) window.scrollBy(0, 2 + 16*(y - (innerHeight - edge))/edge);
+    place();
+    raf = requestAnimationFrame(tick);
+  };
+  tick();
+
+  const move = ev => { y = ev.clientY; };
   const up = () => {
-    li.classList.remove("drag"); li.style.transform = "";
+    cancelAnimationFrame(raf);
+    const t = li.style.transform;
+    li.style.transform = ""; li.classList.remove("drag");
+    if(!calm){      // la frase se asienta deslizándose hasta su hueco
+      li.classList.add("settle");
+      li.animate([{transform:t},{transform:"none"}], {duration:260, easing:EASE}).onfinish = () => li.classList.remove("settle");
+    }
     grip.removeEventListener("pointermove", move);
     grip.removeEventListener("pointerup", up);
     grip.removeEventListener("pointercancel", up);
@@ -377,8 +459,9 @@ $("list").addEventListener("keydown", e => {
   const li = e.target.closest("li");
   if(!li || e.target !== li || checked || !["ArrowUp","ArrowDown"].includes(e.key)) return;
   e.preventDefault(); clearOk();
-  if(e.key === "ArrowUp" && li.previousElementSibling) $("list").insertBefore(li, li.previousElementSibling);
-  if(e.key === "ArrowDown" && li.nextElementSibling) $("list").insertBefore(li.nextElementSibling, li);
+  const list = $("list");
+  if(e.key === "ArrowUp" && li.previousElementSibling) flip(list, () => list.insertBefore(li, li.previousElementSibling));
+  if(e.key === "ArrowDown" && li.nextElementSibling) flip(list, () => list.insertBefore(li.nextElementSibling, li));
   li.focus();
 });
 
