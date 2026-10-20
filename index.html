@@ -123,6 +123,18 @@ body.focus .arco::before,body.focus .arco::after{display:none}
 .sent li{transition:scale .18s ease,box-shadow .22s ease,background-color .25s ease}
 .sent li.drag{scale:1.03}
 .sent li.settle{z-index:4}
+
+/* ---- Ilustraciones (solo pantallas de ordenador) ---- */
+.il{display:none}
+.pg p{margin:.5em 0}
+@media (min-width:900px){
+  body[data-view="read"] main{max-width:940px}
+  .pg{display:grid;grid-template-columns:1fr 190px;gap:28px;align-items:center;margin:.5em 0}
+  .pg:nth-child(even){grid-template-columns:190px 1fr}
+  .pg:nth-child(even) .il{order:-1}
+  .il{display:block;margin:0;border-radius:18px;overflow:hidden;box-shadow:0 0 0 4px #fff,0 0 0 7px var(--line)}
+  .il svg{display:block;width:100%;height:auto}
+}
 </style>
 <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
 </head>
@@ -268,12 +280,74 @@ const STORIES = [
   ]}
 ];
 
+/* ---- Ilustraciones sencillas: 3 por cuento, una por cada trozo del texto (solo en pantallas de ordenador) ---- */
+const ART = (() => {
+  const INK = "#3a3359";
+  const svg = (bg, ...p) => `<svg viewBox="0 0 160 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect width="160" height="120" fill="${bg}"/>${p.join("")}</svg>`;
+  const ci = (x,y,r,f) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${f}"/>`;
+  const rc = (x,y,w,h,f,rx=0) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}" fill="${f}"/>`;
+  const pg = (pts,f) => `<polygon points="${pts}" fill="${f}"/>`;
+  const el = (x,y,rx,ry,f) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="${f}"/>`;
+  const ln = (d,c,w=3) => `<path d="${d}" stroke="${c}" stroke-width="${w}" fill="none" stroke-linecap="round"/>`;
+  const gnd = f => rc(0,92,160,28,f);
+  const wave = (y,f) => `<path d="M0 ${y} q10 -8 20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 t20 0 V120 H0Z" fill="${f}"/>`;
+  const sun = (x,y) => ci(x,y,13,"#ffe28a");
+  const cloud = (x,y) => ci(x,y,8,"#fff")+ci(x+10,y-3,10,"#fff")+ci(x+21,y,8,"#fff");
+  const spark = (x,y) => pg(`${x},${y-6} ${x+2},${y-2} ${x+6},${y} ${x+2},${y+2} ${x},${y+6} ${x-2},${y+2} ${x-6},${y} ${x-2},${y-2}`,"#ffd54a");
+  const heart = (x,y,s=1) => `<path d="M${x} ${y+6*s} C${x-12*s} ${y-3*s} ${x-5*s} ${y-12*s} ${x} ${y-4*s} C${x+5*s} ${y-12*s} ${x+12*s} ${y-3*s} ${x} ${y+6*s}Z" fill="#ff9aa2"/>`;
+  const crown = (x,y) => pg(`${x-8},${y} ${x-8},${y-9} ${x-4},${y-4} ${x},${y-11} ${x+4},${y-4} ${x+8},${y-9} ${x+8},${y}`,"#ffd54a");
+  const tree = (x,s=1) => rc(x-3*s,92-22*s,6*s,22*s,"#c9a27e")+ci(x,92-30*s,16*s,"#a8e6a1");
+  const house = (x,w,h,body,roof) => rc(x,92-h,w,h,body)+pg(`${x-6},${92-h} ${x+w/2},${92-h-24} ${x+w+6},${92-h}`,roof)+rc(x+w/2-6,74,12,18,"#8c6a5a",3);
+  const face = (x,y,r=12,skin="#ffe0c8") => ci(x,y,r,skin)+ci(x-r/3,y-1,1.6,INK)+ci(x+r/3,y-1,1.6,INK)+ln(`M${x-r/3} ${y+r/3} Q${x} ${y+r*.7} ${x+r/3} ${y+r/3}`,INK,1.5);
+  const girl = (x,y) => pg(`${x-14},${y+36} ${x},${y+8} ${x+14},${y+36}`,"#ff8f9e")+ci(x,y,15,"#ff8f9e")+face(x,y+2,11);
+  const wolf = (x,y) => el(x,y+20,12,11,"#b7b3c9")+pg(`${x-16},${y-4} ${x-11},${y-22} ${x-2},${y-12}`,"#b7b3c9")+pg(`${x+16},${y-4} ${x+11},${y-22} ${x+2},${y-12}`,"#b7b3c9")+ci(x,y,16,"#b7b3c9")+el(x,y+6,9,6,"#ece9f7")+ci(x-6,y-3,2,INK)+ci(x+6,y-3,2,INK)+ci(x,y+4,2.4,INK);
+  const pig = (x,y) => el(x,y+18,13,10,"#ffc6d9")+pg(`${x-12},${y-6} ${x-9},${y-18} ${x-1},${y-10}`,"#ffb3cc")+pg(`${x+12},${y-6} ${x+9},${y-18} ${x+1},${y-10}`,"#ffb3cc")+ci(x,y,13,"#ffc6d9")+el(x,y+3,6,4.5,"#ff9ec0")+ci(x-5,y-3,1.8,INK)+ci(x+5,y-3,1.8,INK)+ci(x-2,y+3,1,INK)+ci(x+2,y+3,1,INK);
+  const kid = (x,y,hair,shirt) => rc(x-8,y+10,16,24,shirt,5)+ci(x,y-3,12,hair)+face(x,y,10);
+  const witch = (x,y) => rc(x-22,y-8,44,5,"#4a3f6b",2)+pg(`${x-13},${y-8} ${x},${y-40} ${x+13},${y-8}`,"#4a3f6b")+face(x,y+6,13,"#caffbf");
+  const mermaid = (x,y) => ci(x,y,15,"#ffb38a")+`<path d="M${x} ${y+14} Q${x-12} ${y+34} ${x-22} ${y+40} Q${x-2} ${y+42} ${x} ${y+32} Q${x+2} ${y+42} ${x+22} ${y+40} Q${x+12} ${y+34} ${x} ${y+14}Z" fill="#9be8d8"/>`+face(x,y+2,11);
+  const puppet = (x,y,nose,ears) => rc(x-9,y+16,18,22,"#8fc9ff",5)+(ears ? pg(`${x-14},${y-12} ${x-24},${y-34} ${x-4},${y-18}`,"#b7b3c9")+pg(`${x+14},${y-12} ${x+24},${y-34} ${x+4},${y-18}`,"#b7b3c9") : pg(`${x-14},${y-14} ${x},${y-36} ${x+14},${y-14}`,"#ff8f9e"))+ci(x,y,18,"#ffd9a8")+ci(x-6,y-4,2.2,INK)+ci(x+6,y-4,2.2,INK)+pg(`${x},${y+1} ${x+nose},${y+4} ${x},${y+8}`,"#ff9a5a")+ln(`M${x-7} ${y+11} Q${x} ${y+15} ${x+7} ${y+11}`,INK,1.5);
+
+  return {
+    "Caperucita Roja":[
+      svg("#e8f8ff",sun(135,24),cloud(18,22),gnd("#caffbf"),tree(26),tree(134,.9),girl(78,50),rc(90,76,14,10,"#d9a56b",2),ln("M92 76 Q97 68 102 76","#b98a4e",2)),
+      svg("#e8f8ff",gnd("#caffbf"),tree(30,1.1),wolf(70,68),girl(118,50)),
+      svg("#fff1e0",gnd("#caffbf"),house(28,70,42,"#ffe3c2","#ff9aa2"),girl(128,52),heart(130,20,1.2))
+    ],
+    "Los tres cerditos":[
+      svg("#e8f8ff",cloud(105,22),gnd("#caffbf"),pig(36,64),pig(80,64),pig(124,64)),
+      svg("#e8f8ff",sun(138,22),gnd("#caffbf"),house(10,34,30,"#ffeaa0","#e3bd54"),house(60,34,30,"#d9a56b","#a9794a"),house(110,34,30,"#f4a6a0","#c97b7b")),
+      svg("#e8f8ff",gnd("#caffbf"),wolf(38,66),ln("M60 60 q10 -7 20 0 t20 0","#9bd9ff"),ln("M62 72 q10 -7 20 0 t16 0","#9bd9ff"),house(106,40,36,"#f4a6a0","#c97b7b"))
+    ],
+    "Blancanieves":[
+      svg("#efe6ff",el(108,58,24,36,"#ffd54a"),el(108,58,19,30,"#e6f7ff"),spark(103,46),spark(114,68),rc(24,86,28,22,"#bdb2ff",6),face(38,72,15),crown(38,58)),
+      svg("#e8f8ff",gnd("#caffbf"),tree(18),house(48,52,36,"#ffe3c2","#ff9aa2"),pg("118,92 126,66 134,92","#ff9aa2"),face(126,82,7),pg("138,92 146,70 154,92","#8fc9ff"),face(146,84,6)),
+      svg("#fff0f3",ci(80,68,26,"#ff8f9e"),ci(71,60,6,"#ffc6d0"),rc(79,34,3,14,"#a9794a"),el(92,40,9,4.5,"#a8e6a1"),heart(28,30,.9),heart(132,36,.9),spark(130,86),spark(30,88))
+    ],
+    "Hansel y Gretel":[
+      svg("#e8f8ff",gnd("#caffbf"),tree(24),tree(136),tree(80,.8),kid(62,60,"#a9794a","#8fc9ff"),kid(98,60,"#ffd54a","#ff9ec0"),ci(36,100,2,"#ffe0b0"),ci(46,104,2,"#ffe0b0"),ci(26,106,2,"#ffe0b0")),
+      svg("#fff5e6",gnd("#caffbf"),tree(14,.9),house(40,84,46,"#ffd6a5","#ff9ec0"),ci(60,64,4,"#ff7aa2"),ci(86,60,4,"#9bf6ff"),ci(106,70,4,"#caffbf"),ci(72,78,3.5,"#fdffb6"),ci(118,80,3.5,"#bdb2ff")),
+      svg("#efe6ff",rc(38,80,28,26,"#4a3f6b",8),witch(52,70),rc(98,48,44,44,"#b7b3c9",6),rc(106,60,28,26,"#ff9a5a",5),ci(120,76,5,"#ffd54a"))
+    ],
+    "La Sirenita":[
+      svg("#d9f1ff",ci(30,30,4,"#fff"),ci(40,44,3,"#fff"),ci(128,36,4,"#fff"),mermaid(80,36),wave(90,"#a8d8ff"),wave(102,"#8cc7f5")),
+      svg("#c9c4f5",ci(128,26,12,"#fff7c9"),spark(40,22),spark(100,16),pg("40,68 120,68 108,86 52,86","#d9a56b"),rc(78,34,3,34,"#a9794a"),pg("81,36 81,64 110,64","#fff"),pg("77,40 77,64 56,64","#ffeaf2"),wave(90,"#a8d8ff"),wave(102,"#8cc7f5")),
+      svg("#d9f1ff",heart(80,30,1.5),face(52,62,13),crown(52,48),ci(108,60,16,"#ffb38a"),face(108,62,13),wave(94,"#a8d8ff"),wave(106,"#8cc7f5"))
+    ],
+    "Pinocho":[
+      svg("#fff5e6",gnd("#ffe9c4"),puppet(76,58,10,false),el(126,44,6,9,"#9bf6ff"),ci(126,52,6,"#ffc6ff"),spark(126,26),spark(24,28)),
+      svg("#fff5e6",gnd("#ffe9c4"),puppet(50,58,70,true),spark(138,40),spark(22,24)),
+      svg("#d9f1ff",wave(70,"#a8d8ff"),el(76,68,46,24,"#a0c4ff"),pg("116,62 146,38 142,76","#a0c4ff"),ci(50,64,2.6,INK),ln("M40 76 Q56 86 72 76",INK,2),ln("M62 46 Q62 30 52 22","#9be8ff"),ln("M62 46 Q62 30 72 22","#9be8ff"),wave(88,"#8cc7f5"),wave(102,"#a8d8ff"))
+    ]
+  };
+})();
+
 const $ = id => document.getElementById(id);
 let story, checked = false;
 
 function show(v){
   if("speechSynthesis" in window) speechSynthesis.cancel();
   ["home","read","play"].forEach(x => $(x).hidden = x !== v);
+  document.body.dataset.view = v;
   window.scrollTo(0,0);
 }
 
@@ -292,10 +366,14 @@ function openStory(i){
   story = STORIES[i];
   $("rTitle").textContent = story.title;
   $("rText").innerHTML = "";
-  for(let k = 0; k < story.t.length; k += 3){
+  const cuts = [0, 3, 6, story.t.length], pics = ART[story.title] || [];
+  for(let k = 0; k < 3; k++){
+    const row = document.createElement("div"); row.className = "pg";
     const p = document.createElement("p");
-    p.textContent = story.t.slice(k, k+3).join(" ");
-    $("rText").appendChild(p);
+    p.textContent = story.t.slice(cuts[k], cuts[k+1]).join(" ");
+    row.appendChild(p);
+    if(pics[k]){ const f = document.createElement("figure"); f.className = "il"; f.innerHTML = pics[k]; row.appendChild(f); }
+    $("rText").appendChild(row);
   }
   show("read");
 }
