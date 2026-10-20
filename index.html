@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ordena el cuento</title>
+<style>
+:root{
+  --bg:#eceeff; --ink:#23214d; --card:#fff; --sun:#ffc93c; --sun-d:#e0a800;
+  --ok:#3dbe8b; --ok-bg:#e2f7ee; --bad:#f0624d; --bad-bg:#ffe9e5; --line:#c9cdf5;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;font-size:1.15rem;line-height:1.5}
+main{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:clamp(1.9rem,6vw,2.8rem);line-height:1.1;margin:.4em 0 .2em;letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,5vw,2.1rem);margin:.3em 0}
+p.lead{margin:0 0 1.2em;opacity:.85}
+[hidden]{display:none!important}
+
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--sun);border:0;
+  border-bottom:5px solid var(--sun-d);border-radius:14px;padding:.7em 1.3em;cursor:pointer;min-height:48px}
+button:active{transform:translateY(3px);border-bottom-width:2px}
+button.ghost{background:#fff;border-bottom-color:var(--line)}
+:focus-visible{outline:4px solid var(--ink);outline-offset:3px}
+
+.stories{display:grid;gap:14px}
+.story{display:flex;align-items:center;gap:16px;width:100%;text-align:left;background:var(--card);
+  border-bottom:6px solid var(--line);border-radius:20px;padding:16px 20px;font-size:1.3rem}
+.story .em{font-size:2.6rem;line-height:1}
+.story small{display:block;font-weight:400;font-size:1rem;opacity:.7}
+
+.book{background:var(--card);border-radius:20px;border-bottom:6px solid var(--line);
+  padding:8px 22px;font-size:1.3rem;line-height:1.7;max-width:100%}
+.book p{margin:.9em 0}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+
+ol.sent{list-style:none;margin:0;padding:0;counter-reset:n;display:grid;gap:10px}
+.sent li{counter-increment:n;display:flex;align-items:stretch;background:var(--card);
+  border-radius:16px;border-bottom:5px solid var(--line);position:relative;user-select:none;-webkit-user-select:none}
+.sent li::before{content:counter(n);flex:0 0 46px;display:grid;place-items:center;font-weight:800;
+  font-size:1.2rem;background:var(--sun);border-radius:16px 0 0 12px}
+.sent .txt{flex:1;padding:12px 14px;font-size:1.1rem}
+.grip{flex:0 0 56px;display:grid;place-items:center;cursor:grab;touch-action:none;font-size:1.6rem;
+  letter-spacing:-.1em;opacity:.55;border-radius:0 16px 16px 0}
+.sent li.drag{z-index:5;box-shadow:0 12px 28px rgba(35,33,77,.28);border-bottom-color:var(--sun-d);cursor:grabbing}
+.sent li.drag .grip{cursor:grabbing}
+.sent li.ok{background:var(--ok-bg);border-bottom-color:var(--ok)}
+.sent li.ok::before{background:var(--ok)}
+.sent li.bad{background:var(--bad-bg);border-bottom-color:var(--bad)}
+.sent li.bad::before{background:var(--bad)}
+.sent.done .grip{visibility:hidden}
+.mark{flex:0 0 44px;display:grid;place-items:center;font-size:1.4rem}
+
+.result{background:var(--card);border-radius:20px;border-bottom:6px solid var(--line);padding:18px 22px;margin-bottom:18px}
+.stars{font-size:2.2rem;letter-spacing:.1em}
+.score{font-size:1.5rem;font-weight:800;margin:.1em 0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ---- Accesibilidad ---- */
+:root{--ff:"Trebuchet MS","Segoe UI",system-ui,sans-serif;--fs:1;--ls:0em;--ws:0em;--lh:1.5}
+body{font-family:var(--ff);font-size:calc(1.15rem*var(--fs));letter-spacing:var(--ls);word-spacing:var(--ws);line-height:var(--lh)}
+.story{font-size:1.1em}
+.book{font-size:1.12em;line-height:calc(var(--lh) + .25)}
+.sent .txt{font-size:1em}
+.ajustes{background:#fff;border-radius:16px;border-bottom:5px solid var(--line);margin-bottom:18px;padding:2px 16px}
+.ajustes summary{cursor:pointer;font-weight:700;padding:12px 0;min-height:48px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.row>span{flex:0 0 100%;font-weight:700}
+.row button{padding:.45em 1em;min-height:44px}
+button[aria-pressed="true"]{background:var(--sun);border-bottom-color:var(--sun-d)}
+.tip{background:#fff6d6;border:3px solid var(--sun);border-radius:14px;padding:12px 16px;margin-bottom:14px;font-weight:700}
+.sent li.hint{outline:4px dashed var(--sun-d);outline-offset:2px}
+.sent .say{flex:0 0 52px;min-height:0;background:transparent;border:0;border-radius:0;font-size:1.3rem;padding:0}
+.sent .say:active{transform:none;border:0}
+.nospeech .say,.nospeech #rSpeak{display:none}
+body.focus .em,body.focus .stars{display:none}
+body.focus .sent li{box-shadow:none}
+
+/* ---- Pasteles y arcoíris ---- */
+:root{
+  --ff:"Lexend","Verdana","Trebuchet MS",sans-serif;--ls:.06em;--ws:.12em;--lh:1.7;
+  --ink:#3a3359;--line:#e6dcf7;--sun:#ffe99a;--sun-d:#f2cd5c;
+  --rb:linear-gradient(90deg,#ffc6d9,#ffd6a5,#fdffb6,#caffbf,#9bf6ff,#bdb2ff);
+  --rb-full:linear-gradient(90deg,#ffadad,#ffd6a5,#fdffb6,#caffbf,#9bf6ff,#a0c4ff,#bdb2ff,#ffc6ff);
+}
+body{background:linear-gradient(180deg,#efe9ff 0%,#fff1f8 50%,#fffbe6 100%) fixed;min-height:100vh}
+body::before{content:"";position:fixed;inset:0 0 auto 0;height:10px;background:var(--rb-full);z-index:20}
+h1,h2{letter-spacing:calc(var(--ls) + .02em);font-weight:700}
+#home{text-align:center}
+.arco{position:relative;width:240px;height:120px;margin:18px auto 0;
+  background:radial-gradient(circle 120px at 50% 100%,transparent 0 46%,#bdb2ff 46% 54%,#a0c4ff 54% 62%,#9bf6ff 62% 70%,#caffbf 70% 78%,#fdffb6 78% 86%,#ffd6a5 86% 93%,#ffadad 93% 100%,transparent 100%)}
+.arco::before,.arco::after{content:"☁️";position:absolute;bottom:-8px;font-size:2.6rem;line-height:1}
+.arco::before{left:-44px}.arco::after{right:-44px}
+button{background:var(--rb);border-bottom-color:#d6c6f0}
+.story:nth-child(1){background:#ffe0e8;border-bottom-color:#ffadc4}
+.story:nth-child(2){background:#e3f8e1;border-bottom-color:#a8e6a1}
+.story:nth-child(3){background:#e9e5ff;border-bottom-color:#b9aef5}
+.book,.result{background:linear-gradient(#fff,#fff) padding-box,var(--rb-full) border-box;border:6px solid transparent;border-radius:24px}
+.result{padding:14px 20px}
+.stars{color:#ffc857}
+.tip{background:#fff9d9;border-color:#ffe08a}
+.ajustes{border-bottom-color:var(--line)}
+.sent li{border-bottom-color:var(--line)}
+.sent li:nth-child(7n+1)::before{background:#ffadad}
+.sent li:nth-child(7n+2)::before{background:#ffd6a5}
+.sent li:nth-child(7n+3)::before{background:#fdffb6}
+.sent li:nth-child(7n+4)::before{background:#caffbf}
+.sent li:nth-child(7n+5)::before{background:#9bf6ff}
+.sent li:nth-child(7n+6)::before{background:#a0c4ff}
+.sent li:nth-child(7n)::before{background:#bdb2ff}
+.sent li.ok{background:#e6faee;border-bottom-color:#8fe3b0}
+.sent li.ok::before{background:#8fe3b0}
+.sent li.bad{background:#ffe6e6;border-bottom-color:#ffadad}
+.sent li.bad::before{background:#ffadad}
+body.focus .arco::before,body.focus .arco::after{display:none}
+</style>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<main>
+
+<details class="ajustes">
+  <summary>⚙️ Ajustes de lectura</summary>
+  <div class="row"><span>Letra</span>
+    <button class="ghost" data-set="ff:0">Lexend</button>
+    <button class="ghost" data-set="ff:1">Verdana</button></div>
+  <div class="row"><span>Tamaño</span>
+    <button class="ghost" data-set="fs:0">Normal</button>
+    <button class="ghost" data-set="fs:1">Grande</button>
+    <button class="ghost" data-set="fs:2">Muy grande</button></div>
+  <div class="row"><span>Espacio entre letras, palabras y líneas</span>
+    <button class="ghost" data-set="sp:0">Normal</button>
+    <button class="ghost" data-set="sp:1">Amplio</button>
+    <button class="ghost" data-set="sp:2">Muy amplio</button></div>
+  <div class="row"><span>Frases a ordenar</span>
+    <button class="ghost" data-set="focus:false">Todas a la vez</button>
+    <button class="ghost" data-set="focus:true">De 5 en 5</button></div>
+</details>
+
+<section id="home">
+  <div class="arco" aria-hidden="true"></div>
+  <h1>Ordena el cuento</h1>
+  <p class="lead">Elige un cuento, léelo con calma y después pon las frases en el orden en que pasó todo.</p>
+  <div class="stories" id="stories"></div>
+</section>
+
+<section id="read" hidden>
+  <h2 id="rTitle"></h2>
+  <div class="book" id="rText"></div>
+  <div class="actions">
+    <button id="rGo">¡Ya lo he leído!</button>
+    <button id="rSpeak" class="ghost">🔊 Escuchar el cuento</button>
+    <button class="ghost" data-home>Elegir otro cuento</button>
+  </div>
+</section>
+
+<section id="play" hidden>
+  <h2 id="pTitle"></h2>
+  <div class="result" id="result" hidden>
+    <div class="stars" id="stars" aria-hidden="true"></div>
+    <div class="score" id="score"></div>
+    <div id="msg"></div>
+    <div id="extra"></div>
+  </div>
+  <p class="lead" id="hint">Arrastra las frases desde el icono ⠿ para ponerlas en orden: la primera arriba y la última abajo.</p>
+  <div class="tip" id="tip" role="status" aria-live="polite" hidden></div>
+  <ol class="sent" id="list"></ol>
+  <div class="actions">
+    <button id="check">Comprobar</button>
+    <button id="next" hidden>Siguiente parte</button>
+    <button id="retry" class="ghost" hidden>Intentarlo otra vez</button>
+    <button class="ghost" data-home>Elegir otro cuento</button>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* ---- Cuentos: las frases están en el ORDEN CORRECTO. Se barajan al jugar. ---- */
+const STORIES = [
+  { title:"Caperucita Roja", emoji:"🧺", s:[
+    "Caperucita Roja vivía con su mamá cerca del bosque.",
+    "Un día, su mamá le pidió que llevara una cesta con comida a su abuelita, que estaba enferma.",
+    "En el camino, Caperucita se encontró con el lobo, que le preguntó adónde iba.",
+    "La niña le contó que iba a casa de su abuelita, y el lobo se fue corriendo por un atajo.",
+    "El lobo llegó primero, encerró a la abuelita en el armario y se metió en su cama.",
+    "Cuando Caperucita llegó, vio que su abuelita estaba muy rara.",
+    "Le preguntó por sus grandes ojos, sus grandes orejas y su enorme boca.",
+    "El lobo respondió: «¡Es para comerte mejor!» y saltó de la cama.",
+    "Un leñador oyó los gritos, entró en la casa y asustó al lobo.",
+    "El lobo salió huyendo, la abuelita salió del armario y todos se abrazaron felices."
+  ]},
+  { title:"Los tres cerditos", emoji:"🐷", s:[
+    "Tres cerditos salieron de casa para construir cada uno su propia casita.",
+    "El primero hizo su casa de paja muy deprisa para irse a jugar.",
+    "El segundo la hizo de madera, y el tercero trabajó mucho para construirla de ladrillos.",
+    "Un día apareció el lobo feroz y llamó a la puerta de la casa de paja.",
+    "Sopló con fuerza y la casa de paja salió volando.",
+    "El primer cerdito corrió a refugiarse en la casa de madera de su hermano.",
+    "El lobo sopló otra vez y la casa de madera se derrumbó.",
+    "Los dos cerditos huyeron hasta la casa de ladrillos del tercer hermano.",
+    "El lobo sopló y sopló, pero la casa de ladrillos no se movió.",
+    "El lobo se rindió y los tres cerditos vivieron seguros y felices."
+  ]},
+  { title:"Blancanieves", emoji:"🍎", s:[
+    "Blancanieves era una princesa muy bella que vivía con su madrastra, la reina malvada.",
+    "La reina le preguntaba cada día a su espejo mágico quién era la más hermosa del reino.",
+    "Un día el espejo respondió que era Blancanieves, y la reina se llenó de envidia.",
+    "Blancanieves tuvo que huir al bosque, donde encontró una casita muy pequeña.",
+    "Allí vivían siete enanitos, que la dejaron quedarse con ellos.",
+    "La reina se disfrazó de anciana y le ofreció a Blancanieves una manzana envenenada.",
+    "Blancanieves mordió la manzana y cayó en un sueño profundo.",
+    "Los enanitos la encontraron y, muy tristes, la colocaron en una urna de cristal.",
+    "Un príncipe la vio, quedó maravillado y le dio un beso.",
+    "Blancanieves despertó y se casó con el príncipe."
+  ]}
+];
+
+const $ = id => document.getElementById(id);
+let story, checked = false;
+
+function show(v){
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+  ["home","read","play"].forEach(x => $(x).hidden = x !== v);
+  window.scrollTo(0,0);
+}
+
+/* ---- Inicio ---- */
+STORIES.forEach((st,i) => {
+  const b = document.createElement("button");
+  b.className = "story";
+  b.innerHTML = `<span class="em">${st.emoji}</span><span>${st.title}<small>${st.s.length} frases para ordenar</small></span>`;
+  b.onclick = () => openStory(i);
+  $("stories").appendChild(b);
+});
+document.querySelectorAll("[data-home]").forEach(b => b.onclick = () => show("home"));
+
+/* ---- Lectura ---- */
+function openStory(i){
+  story = STORIES[i];
+  $("rTitle").textContent = story.title;
+  $("rText").innerHTML = "";
+  for(let k = 0; k < story.s.length; k += 3){
+    const p = document.createElement("p");
+    p.textContent = story.s.slice(k, k+3).join(" ");
+    $("rText").appendChild(p);
+  }
+  show("read");
+}
+$("rGo").onclick = startPlay;
+
+/* ---- Ajustes de accesibilidad (se recuerdan en este navegador) ---- */
+const FF = ['"Lexend","Verdana","Trebuchet MS",sans-serif', 'Verdana,"Comic Sans MS","Trebuchet MS",sans-serif'];
+const FS = [1, 1.2, 1.4], LS = [.06, .1, .16], WS = [.12, .2, .3], LH = [1.7, 1.9, 2.1];
+let cfg = {ff:0, fs:0, sp:0, focus:false};
+try { Object.assign(cfg, JSON.parse(localStorage.getItem("cfg") || "{}")); } catch(e){}
+function applyCfg(){
+  const r = document.documentElement.style;
+  r.setProperty("--ff", FF[cfg.ff]); r.setProperty("--fs", FS[cfg.fs]);
+  r.setProperty("--ls", LS[cfg.sp] + "em"); r.setProperty("--ws", WS[cfg.sp] + "em"); r.setProperty("--lh", LH[cfg.sp]);
+  document.body.classList.toggle("focus", cfg.focus);
+  document.querySelectorAll("[data-set]").forEach(b => {
+    const [k, v] = b.dataset.set.split(":");
+    b.setAttribute("aria-pressed", String(String(cfg[k]) === v));
+  });
+  try { localStorage.setItem("cfg", JSON.stringify(cfg)); } catch(e){}
+}
+document.querySelectorAll("[data-set]").forEach(b => b.onclick = () => {
+  const [k, v] = b.dataset.set.split(":");
+  cfg[k] = v === "true" ? true : v === "false" ? false : +v;
+  applyCfg();
+});
+applyCfg();
+
+/* ---- Lectura en voz alta ---- */
+const canSpeak = "speechSynthesis" in window;
+if(!canSpeak) document.body.classList.add("nospeech");
+function speak(t){
+  if(!canSpeak) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(t); u.lang = "es-ES"; u.rate = .9;
+  speechSynthesis.speak(u);
+}
+$("rSpeak").onclick = () => speechSynthesis.speaking ? speechSynthesis.cancel() : speak(story.s.join(" "));
+
+/* ---- Juego ---- */
+const MAX = 3, CH = 5;           // intentos por parte y frases por parte (modo "de 5 en 5")
+let parts, pi, tries, totalOk, firstOk, totalTries;
+
+function shuffled(n){
+  const a = [...Array(n).keys()];
+  do { for(let i = n-1; i > 0; i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } }
+  while(a.every((v,i) => v === i));
+  return a;
+}
+function setTip(t){ $("tip").hidden = !t; $("tip").textContent = t || ""; }
+function mark(li, cls, mcls, sym){
+  li.classList.add(cls);
+  const m = document.createElement("span");
+  m.className = "mark " + mcls; m.textContent = sym;
+  li.insertBefore(m, li.querySelector(".grip"));
+}
+function clearOk(){   // al mover una frase se quitan las marcas verdes/rojas; la estrella de la pista se queda
+  $("list").querySelectorAll("li").forEach(li => li.classList.remove("ok","bad"));
+  $("list").querySelectorAll(".m-ok,.m-bad").forEach(m => m.remove());
+}
+
+function startPlay(){
+  const n = story.s.length;
+  parts = [];
+  if(cfg.focus) for(let a = 0; a < n; a += CH) parts.push([a, Math.min(a+CH, n)]);
+  else parts = [[0, n]];
+  pi = 0; totalOk = 0; firstOk = 0; totalTries = 0;
+  $("result").hidden = true;
+  loadPart(); show("play");
+}
+
+function loadPart(){
+  const [a, b] = parts[pi];
+  tries = 0; checked = false;
+  $("pTitle").textContent = story.title + (parts.length > 1 ? ` (parte ${pi+1} de ${parts.length})` : "");
+  $("result").hidden = true; $("hint").hidden = false; setTip("");
+  $("check").hidden = false; $("next").hidden = true; $("retry").hidden = true;
+  const list = $("list");
+  list.className = "sent"; list.innerHTML = "";
+  shuffled(b - a).forEach(k => {
+    const i = a + k, li = document.createElement("li");
+    li.dataset.i = i; li.tabIndex = 0;
+    li.innerHTML = `<span class="txt"></span><button class="say" aria-label="Escuchar esta frase">🔊</button><span class="grip" aria-hidden="true">⠿</span>`;
+    li.querySelector(".txt").textContent = story.s[i];
+    list.appendChild(li);
+  });
+}
+
+$("list").addEventListener("click", e => {
+  const b = e.target.closest(".say");
+  if(b) speak(b.closest("li").querySelector(".txt").textContent);
+});
+
+/* Arrastrar con ratón, dedo o lápiz (Pointer Events) */
+$("list").addEventListener("pointerdown", e => {
+  const grip = e.target.closest(".grip");
+  if(!grip || checked) return;
+  e.preventDefault();
+  clearOk();
+  const list = $("list"), li = grip.closest("li");
+  const grab = e.clientY - li.getBoundingClientRect().top;
+  li.classList.add("drag");
+  grip.setPointerCapture(e.pointerId);
+
+  const move = ev => {
+    li.style.transform = "none";
+    const h = li.getBoundingClientRect().height;
+    const top = ev.clientY - grab, centre = top + h/2;
+    const prev = li.previousElementSibling, next = li.nextElementSibling;
+    if(prev){ const r = prev.getBoundingClientRect(); if(centre < r.top + r.height/2) list.insertBefore(li, prev); }
+    if(next){ const r = next.getBoundingClientRect(); if(centre > r.top + r.height/2) list.insertBefore(next, li); }
+    li.style.transform = `translateY(${top - li.getBoundingClientRect().top}px)`;
+    if(ev.clientY < 80) window.scrollBy(0,-14);
+    else if(ev.clientY > innerHeight - 80) window.scrollBy(0,14);
+  };
+  const up = () => {
+    li.classList.remove("drag"); li.style.transform = "";
+    grip.removeEventListener("pointermove", move);
+    grip.removeEventListener("pointerup", up);
+    grip.removeEventListener("pointercancel", up);
+  };
+  grip.addEventListener("pointermove", move);
+  grip.addEventListener("pointerup", up);
+  grip.addEventListener("pointercancel", up);
+});
+
+/* Teclado: flechas arriba/abajo mueven la frase enfocada */
+$("list").addEventListener("keydown", e => {
+  const li = e.target.closest("li");
+  if(!li || e.target !== li || checked || !["ArrowUp","ArrowDown"].includes(e.key)) return;
+  e.preventDefault(); clearOk();
+  if(e.key === "ArrowUp" && li.previousElementSibling) $("list").insertBefore(li, li.previousElementSibling);
+  if(e.key === "ArrowDown" && li.nextElementSibling) $("list").insertBefore(li.nextElementSibling, li);
+  li.focus();
+});
+
+/* ---- Comprobar: pista y reintento (máx. 3 intentos por parte) ---- */
+$("check").onclick = () => {
+  const items = [...$("list").children], a = parts[pi][0];
+  items.forEach(li => { li.classList.remove("ok","bad","hint"); li.querySelectorAll(".mark").forEach(m => m.remove()); });
+  let ok = 0, firstBad = -1;
+  items.forEach((li, pos) => { if(+li.dataset.i - a === pos) ok++; else if(firstBad < 0) firstBad = pos; });
+  tries++; totalTries++;
+  if(tries === 1) firstOk += ok;
+  if(ok === items.length || tries >= MAX) return finishPart(items, ok, a);
+
+  items.forEach((li, pos) => { if(+li.dataset.i - a === pos) mark(li, "ok", "m-ok", "✅"); });
+  const li = items[firstBad], want = +li.dataset.i - a, left = MAX - tries;
+  mark(li, "hint", "m-hint", "⭐");
+  setTip(`Ya hay ${ok} de ${items.length} frases en su sitio (✅). Pista: la frase con ⭐ va más ${want > firstBad ? "abajo" : "arriba"}. Te ${left === 1 ? "queda 1 intento" : "quedan " + left + " intentos"}.`);
+};
+
+function finishPart(items, ok, a){
+  checked = true; $("list").classList.add("done"); setTip("");
+  items.forEach(li => { li.classList.remove("ok","bad","hint"); li.querySelectorAll(".mark").forEach(m => m.remove()); });
+  items.forEach((li, pos) => { const good = +li.dataset.i - a === pos; mark(li, good ? "ok" : "bad", good ? "m-ok" : "m-bad", good ? "✅" : "❌"); });
+  totalOk += ok; $("check").hidden = true; $("hint").hidden = true;
+  if(pi < parts.length - 1){
+    setTip(`¡Parte ${pi+1} terminada! ${ok} de ${items.length} frases en su sitio.`);
+    $("next").hidden = false; return;
+  }
+  const n = story.s.length, pct = Math.round(totalOk / n * 100);
+  const st = pct >= 90 ? 3 : pct >= 60 ? 2 : pct >= 30 ? 1 : 0;
+  $("stars").textContent = "★".repeat(st) + "☆".repeat(3 - st);
+  $("score").textContent = `${totalOk} de ${n} frases en su sitio (${pct} %)`;
+  $("msg").textContent = pct === 100 ? "¡Perfecto! Has ordenado el cuento sin fallos."
+    : pct >= 60 ? "¡Muy bien! Casi lo tienes."
+    : "¡Buen intento! Vuelve a leer el cuento y prueba otra vez.";
+  $("extra").textContent = `Al primer intento: ${firstOk} de ${n}. Intentos usados: ${totalTries}.`;
+  $("result").hidden = false; $("retry").hidden = false;
+  window.scrollTo(0,0);
+}
+$("next").onclick = () => { pi++; loadPart(); window.scrollTo(0,0); };
+$("retry").onclick = () => show("read");
+</script>
+</body>
+</html>
